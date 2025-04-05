@@ -66,33 +66,30 @@ local function SendInventoryWebhook()
     local diamondDifference = diamonds - prevDiamonds
     prevDiamonds = diamonds  -- Uppdatera prevDiamonds för nästa gång
 
-    local embed = {
-        title = "📦 Inventory Update",
-        description = string.format([[
-**%s har just nu:**
-💎 Diamonds = %s%s
-🐾 Huge = %d, Titanic = %d
-]], 
-LocalPlayer.Name, 
-Formatint(diamonds), 
-diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or "", 
-hugeCount or 0, 
-titanicCount or 0, 
-gargantuanCount or 0),
+    local descriptionLines = {
+        string.format("**%s har just nu:**", LocalPlayer.Name),
+        string.format("💎 Diamonds = %s%s", Formatint(diamonds), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
+        string.format("🐾 Huge = %d", hugeCount or 0),
+        string.format("🐾 Titanic = %d", titanicCount or 0),
+        string.format("🐾 Gargantuan = %d", gargantuanCount or 0),
+    }
+
+    local mainEmbed = {
+        title = "💎 **Gem Inventory Update** 💎",
+        description = table.concat(descriptionLines, "\n"),
         color = 0xFF00FF,  -- Samma färg som Huge
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
-            url = GetPlayerAvatar(LocalPlayer.UserId)
+            url = "https://cdn.discordapp.com/attachments/1350797858240204810/1357324447996051526/8355-moon.png"
         },
         footer = {
-            text = string.format("discord.gg/ProjectX | 🌙 | Uppdatering var %d min", getgenv().Config.Webhook.UpdateIntervalMinutes),
-            icon_url = GetPlayerAvatar(LocalPlayer.UserId)
+            text = string.format("discord.gg/projectlunar | 🌙 | Next update: %d mins", getgenv().Config.Webhook.UpdateIntervalMinutes),
         }
     }
 
     local body = HttpService:JSONEncode({
         content = getgenv().Config.Webhook.PingID and string.format("<@%s>", getgenv().Config.Webhook.PingID) or nil,
-        embeds = { embed }
+        embeds = { mainEmbed }
     })
 
     pcall(function()
@@ -119,7 +116,7 @@ local function SendNewHugeWebhook(pet)
     if pet.sh then petName = petName .. "✨ Shiny " end
     petName = petName .. pet.id
 
-    local embed = {
+    local petEmbed = {
         title = "🎉 Ny Huge/Titanic Fångad!",
         description = string.format("**%s** har fått en:\n```%s```", LocalPlayer.Name, petName),
         color = 0xFF00FF,
@@ -128,13 +125,13 @@ local function SendNewHugeWebhook(pet)
             url = "https://biggamesapi.io/image/" .. assetId
         },
         footer = {
-            text = "discord.gg/ProjectX"
+            text = "discord.gg/projectlunar"
         }
     }
 
     local body = HttpService:JSONEncode({
         content = getgenv().Config.Webhook.PingID and string.format("<@%s>", getgenv().Config.Webhook.PingID) or nil,
-        embeds = { embed }
+        embeds = { petEmbed }
     })
 
     pcall(function()
