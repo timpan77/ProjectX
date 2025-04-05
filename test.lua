@@ -63,10 +63,8 @@ local function SendInventoryWebhook()
     local diamondDifference = diamonds - prevDiamonds
     prevDiamonds = diamonds  -- Uppdatera prevDiamonds för nästa gång
 
-    local playerName = LocalPlayer.Name  -- Hämtar spelarens namn
-
     local descriptionLines = {
-        string.format("\n**Username: ||%s||**", playerName),
+        string.format("**%s have right now:**", LocalPlayer.Name),
         "```",
         string.format("%-18s = %s%s", "💎 Diamonds", Formatint(diamonds), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
         string.format("%-18s = %d", "🐾 Huge", hugeCount),
@@ -80,7 +78,7 @@ local function SendInventoryWebhook()
         color = 0xFF00FF,  -- Samma färg som Huge
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
-            url = "https://cdn.discordapp.com/attachments/1350797858240204810/1357324447996051526/8355-moon.png"
+            url = "https://cdn.discordapp.com/attachments/1358102605594886288/1358103169447756087/stsmall507x507-pad600x600f8f8f8.jpg?ex=67f29fa3&is=67f14e23&hm=9e07dcb6fc701a2ca8c2f7bf0371fa2aefb11cd561d19d059dda999ed99a34b2&"
         },
         footer = {
             text = string.format("discord.gg/ProjectX | 🌙 | Next update: %d mins", getgenv().Config.Webhook.UpdateIntervalMinutes),
@@ -117,15 +115,15 @@ local function SendNewHugeWebhook(pet)
     petName = petName .. pet.id
 
     local petEmbed = {
-        title = "🎉 New Huge/Titanic Fångad!",
-        description = string.format("**%s** har fått en:\n```%s```", LocalPlayer.Name, petName),
+        title = "🎉 New Huge/Titanic Captured!",
+        description = string.format("**%s** have received one:\n```%s```", LocalPlayer.Name, petName),
         color = 0xFF00FF,
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
             url = "https://biggamesapi.io/image/" .. assetId
         },
         footer = {
-            text = "discord.gg/ProjectX "
+            text = "discord.gg/ProjectX"
         }
     }
 
