@@ -66,7 +66,7 @@ local function SendInventoryWebhook()
     local descriptionLines = {
         string.format("**%s har just nu:**", LocalPlayer.Name),
         string.format("💎 Diamonds       = %s%s", Formatint(diamonds), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
-        string.format("🐾 Huge = %d, Titanic = %d", hugeCount or 0, titanicCount or 0)
+        string.format("🐾 Huge = %d, Titanic = %d", hugeCount, titanicCount)
     }
 
     local mainEmbed = {
