@@ -8,7 +8,6 @@ local Client = Library.Client
 local SaveMod = require(Client.Save)
 local Network = require(Client.Network)
 local ExistCmds = require(Client.ExistCountCmds)
-local RapCmds = require(Client.DevRAPCmds)
 local StoredUIDs = {}
 
 -- == UTILITIES == --
@@ -44,7 +43,6 @@ local function SendPetWebhook(Id, pt, sh)
     local Title = string.format("||%s|| obtained a %s%s%s", LocalPlayer.Name, Version, sh and "Shiny " or "", Id)
 
     local Exist = GetStats(ExistCmds, "Pet", { id = Id, pt = pt, sh = sh, tn = nil })
-    local Rap = GetStats(RapCmds, "Pet", { id = Id, pt = pt, sh = sh, tn = nil })
 
     local Body = HttpService:JSONEncode({
         content = getgenv().Config.Webhook.PingID and string.format("<@%s>", getgenv().Config.Webhook.PingID) or nil,
@@ -54,7 +52,7 @@ local function SendPetWebhook(Id, pt, sh)
             timestamp = DateTime.now():ToIsoDate(),
             thumbnail = { url = Img },
             fields = {{
-                name = string.format("💎 Rap: ``%s`` \n💫 Exist: ``%s``", Formatint(Rap or 0), Formatint(Exist or 0)),
+                name = string.format("💫 Exist: ``%s``", Formatint(Exist or 0)),
                 value = ""
             }},
             footer = { text = "Hippo Logs" }
