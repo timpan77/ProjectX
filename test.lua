@@ -64,11 +64,8 @@ local function SendInventoryWebhook()
     prevDiamonds = diamonds  -- Uppdatera prevDiamonds för nästa gång
 
     local descriptionLines = {
-        string.format("**%s har just nu:**", LocalPlayer.Name),
         "```",
-        string.format("%-15s = %d", "💎 Diamonds", diamonds),
-        "```",
-        "```",
+        string.format("%-15s = %s%s", "💎 Diamonds", Formatint(diamonds), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
         string.format("%-15s = %d", "🐾 Huge", hugeCount),
         string.format("%-15s = %d", "🐾 Titanic", titanicCount),
         "```"
