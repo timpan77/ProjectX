@@ -64,6 +64,7 @@ local function SendInventoryWebhook()
     prevDiamonds = diamonds  -- Uppdatera prevDiamonds för nästa gång
 
     local descriptionLines = {
+        string.format("\n**Username: ||%s||**", playerName),
         "```",
         string.format("%-18s = %s%s", "💎 Diamonds", Formatint(diamonds), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
         string.format("%-18s = %d", "🐾 Huge", hugeCount),
@@ -72,7 +73,7 @@ local function SendInventoryWebhook()
     }
 
     local mainEmbed = {
-        title = "💎 **Gem Inventory Update** 💎",
+        title = "📦 **Inventory Update** 📦",
         description = table.concat(descriptionLines, "\n"),
         color = 0xFF00FF,  -- Samma färg som Huge
         timestamp = DateTime.now():ToIsoDate(),
@@ -80,7 +81,7 @@ local function SendInventoryWebhook()
             url = "https://cdn.discordapp.com/attachments/1350797858240204810/1357324447996051526/8355-moon.png"
         },
         footer = {
-            text = string.format("discord.gg/projectlunar | 🌙 | Next update: %d mins", getgenv().Config.Webhook.UpdateIntervalMinutes),
+            text = string.format("discord.gg/ProjectX | 🌙 | Next update: %d mins", getgenv().Config.Webhook.UpdateIntervalMinutes),
         }
     }
 
@@ -114,7 +115,7 @@ local function SendNewHugeWebhook(pet)
     petName = petName .. pet.id
 
     local petEmbed = {
-        title = "🎉 Ny Huge/Titanic Fångad!",
+        title = "🎉 New Huge/Titanic Fångad!",
         description = string.format("**%s** har fått en:\n```%s```", LocalPlayer.Name, petName),
         color = 0xFF00FF,
         timestamp = DateTime.now():ToIsoDate(),
@@ -122,7 +123,7 @@ local function SendNewHugeWebhook(pet)
             url = "https://biggamesapi.io/image/" .. assetId
         },
         footer = {
-            text = "discord.gg/projectlunar"
+            text = "discord.gg/ProjectX "
         }
     }
 
