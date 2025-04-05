@@ -63,6 +63,8 @@ local function SendInventoryWebhook()
     local diamondDifference = diamonds - prevDiamonds
     prevDiamonds = diamonds  -- Uppdatera prevDiamonds för nästa gång
 
+    local playerName = LocalPlayer.Name  -- Hämtar spelarens namn
+
     local descriptionLines = {
         string.format("\n**Username: ||%s||**", playerName),
         "```",
