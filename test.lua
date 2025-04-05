@@ -64,21 +64,26 @@ local function SendInventoryWebhook()
     prevDiamonds = diamonds  -- Uppdatera prevDiamonds för nästa gång
 
     local descriptionLines = {
-        string.format("**%s have right now:**", LocalPlayer.Name),
-        string.format("💎 Diamonds       = %s%s", Formatint(diamonds), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
-        string.format("🐾 Huge = %d, Titanic = %d", hugeCount, titanicCount)
+        string.format("**%s har just nu:**", LocalPlayer.Name),
+        "```",
+        string.format("%-15s = %d", "💎 Diamonds", diamonds),
+        "```",
+        "```",
+        string.format("%-15s = %d", "🐾 Huge", hugeCount),
+        string.format("%-15s = %d", "🐾 Titanic", titanicCount),
+        "```"
     }
 
     local mainEmbed = {
-        title = "📦 **Inventory Update** 📦",
+        title = "💎 **Gem Inventory Update** 💎",
         description = table.concat(descriptionLines, "\n"),
         color = 0xFF00FF,  -- Samma färg som Huge
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
-            url = "https://cdn.discordapp.com/attachments/1358102605594886288/1358103169447756087/stsmall507x507-pad600x600f8f8f8.jpg?ex=67f29fa3&is=67f14e23&hm=9e07dcb6fc701a2ca8c2f7bf0371fa2aefb11cd561d19d059dda999ed99a34b2&"
+            url = "https://cdn.discordapp.com/attachments/1350797858240204810/1357324447996051526/8355-moon.png"
         },
         footer = {
-            text = string.format("discord.gg/ProjectX | 🌙 | Next update: %d mins", getgenv().Config.Webhook.UpdateIntervalMinutes),
+            text = string.format("discord.gg/projectlunar | 🌙 | Next update: %d mins", getgenv().Config.Webhook.UpdateIntervalMinutes),
         }
     }
 
@@ -112,15 +117,15 @@ local function SendNewHugeWebhook(pet)
     petName = petName .. pet.id
 
     local petEmbed = {
-        title = "🎉 New Huge/Titanic Captured!",
-        description = string.format("**%s** have received one:\n```%s```", LocalPlayer.Name, petName),
+        title = "🎉 Ny Huge/Titanic Fångad!",
+        description = string.format("**%s** har fått en:\n```%s```", LocalPlayer.Name, petName),
         color = 0xFF00FF,
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
             url = "https://biggamesapi.io/image/" .. assetId
         },
         footer = {
-            text = "discord.gg/ProjectX"
+            text = "discord.gg/projectlunar"
         }
     }
 
