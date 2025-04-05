@@ -56,14 +56,15 @@ local function SendInventoryWebhook()
 
     local embed = {
         title = "📦 Inventory Update",
-        description = string.format("**Användare:** ||%s||\n\n💎 **Diamonds:** `%s`\n🐾 **Huge/Titanic/Gargantuan:** `%d`", LocalPlayer.Name, Formatint(diamonds), specialCount),
-        color = 0x00FFFF,
+        description = string.format("**%s har just nu:**\n```💎 Diamonds       = %s\n🐾 Huge/Titanics  = %d```", LocalPlayer.Name, Formatint(diamonds), specialCount),
+        color = 0xFF00FF,  -- Samma färg som huge
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
             url = GetPlayerAvatar(LocalPlayer.UserId)
         },
         footer = {
-            text = string.format("discord.gg/ProjectX | Uppdatering varje %d min", getgenv().Config.Webhook.UpdateIntervalMinutes)
+            text = string.format("discord.gg/ProjectX | 🌙 | Uppdatering var %d min", getgenv().Config.Webhook.UpdateIntervalMinutes),
+            icon_url = GetPlayerAvatar(LocalPlayer.UserId)
         }
     }
 
