@@ -70,7 +70,11 @@ local function SendInventoryWebhook()
 
     local embed = {
         title = "📦 Inventory Update",
-        description = string.format("**%s har just nu:**\n```💎 Diamonds       = %s\n🐾 Huge/Titanics  = %d```", LocalPlayer.Name, Formatint(diamonds), specialCount),
+        description = string.format([[
+    **%s har just nu:**
+    💎 Diamonds       = %s%s
+    🐾 Huge = %d, Titanic = %d, Gargantuan = %d
+    ]], LocalPlayer.Name, Formatint(GetDiamonds()), diff, hugeCount, titanicCount, gargantuanCount),
         color = 0xFF00FF,  -- Samma färg som Huge
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
@@ -81,6 +85,7 @@ local function SendInventoryWebhook()
             icon_url = GetPlayerAvatar(LocalPlayer.UserId)
         }
     }
+    
 
     local body = HttpService:JSONEncode({
         content = getgenv().Config.Webhook.PingID and string.format("<@%s>", getgenv().Config.Webhook.PingID) or nil,
