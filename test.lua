@@ -40,7 +40,9 @@ end
 
 local function CountSpecialPets()
     local pets = SaveMod.Get()['Inventory']['Pet'] or {}
-    local hugeCount, titanicCount, gargantuanCount = 0, 0, 0
+    local hugeCount = 0
+    local titanicCount = 0
+    local gargantuanCount = 0
     for _, pet in pairs(pets) do
         if string.find(pet.id, "Huge") then
             hugeCount += 1
@@ -54,44 +56,39 @@ local function CountSpecialPets()
 end
 
 -- == SEND INVENTORY SUMMARY == --
+local prevDiamonds = 0  -- Initialisera prevDiamonds som 0 vid starten
+
 local function SendInventoryWebhook()
     local diamonds = GetDiamonds()
     local hugeCount, titanicCount, gargantuanCount = CountSpecialPets()
 
-    local diff = ""
-    if lastDiamondCount ~= nil then
-        local change = diamonds - lastDiamondCount
-        if change ~= 0 then
-            local sign = change > 0 and "+" or ""
-            diff = string.format(" (%s%s)", sign, Formatint(change))
-        end
-    end
-    local diamonds = GetDiamonds()
+    -- Beräkna förändringen i diamanter
+    local diamondDifference = diamonds - prevDiamonds
+    prevDiamonds = diamonds  -- Uppdatera prevDiamonds för nästa gång
 
-local embed = {
-    title = "📦 Inventory Update",
-    description = string.format([[
+    local embed = {
+        title = "📦 Inventory Update",
+        description = string.format([[
 **%s har just nu:**
-💎 Diamonds       = %s
+💎 Diamonds = %s%s
 🐾 Huge = %d, Titanic = %d, Gargantuan = %d
 ]], 
 LocalPlayer.Name, 
 Formatint(diamonds), 
+diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or "", 
 hugeCount or 0, 
 titanicCount or 0, 
 gargantuanCount or 0),
-    color = 0xFF00FF,  -- Samma färg som Huge
-    timestamp = DateTime.now():ToIsoDate(),
-    thumbnail = {
-        url = GetPlayerAvatar(LocalPlayer.UserId)
-    },
-    footer = {
-        text = string.format("discord.gg/ProjectX | 🌙 | Uppdatering var %d min", getgenv().Config.Webhook.UpdateIntervalMinutes),
-        icon_url = GetPlayerAvatar(LocalPlayer.UserId)
+        color = 0xFF00FF,  -- Samma färg som Huge
+        timestamp = DateTime.now():ToIsoDate(),
+        thumbnail = {
+            url = GetPlayerAvatar(LocalPlayer.UserId)
+        },
+        footer = {
+            text = string.format("discord.gg/ProjectX | 🌙 | Uppdatering var %d min", getgenv().Config.Webhook.UpdateIntervalMinutes),
+            icon_url = GetPlayerAvatar(LocalPlayer.UserId)
+        }
     }
-}
-
-    
 
     local body = HttpService:JSONEncode({
         content = getgenv().Config.Webhook.PingID and string.format("<@%s>", getgenv().Config.Webhook.PingID) or nil,
