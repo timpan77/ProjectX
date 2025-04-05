@@ -74,7 +74,13 @@ local function SendInventoryWebhook()
     **%s har just nu:**
     💎 Diamonds       = %s%s
     🐾 Huge = %d, Titanic = %d, Gargantuan = %d
-    ]], LocalPlayer.Name, Formatint(GetDiamonds()), diff, hugeCount, titanicCount, gargantuanCount),
+    ]], 
+    LocalPlayer.Name, 
+    Formatint(GetDiamonds()), 
+    (GetDiamonds() - prevDiamonds > 0 and string.format(" (+%s)", Formatint(GetDiamonds() - prevDiamonds)) or ""), 
+    hugeCount or 0, 
+    titanicCount or 0, 
+    gargantuanCount or 0),
         color = 0xFF00FF,  -- Samma färg som Huge
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
