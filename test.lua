@@ -140,7 +140,8 @@ local function CheckAndNotifyDiamondsAndPets()
 end
 
 CheckAndNotifyDiamondsAndPets()
+
 while true do
-    wait(getgenv().Config.Webhook.UpdateIntervalMinutes * 60)
+    wait(getgenv().Config.Webhook.UpdateIntervalMinutes * 60)  -- Uppdatera intervallet för webhook (kan ställas in av användaren)
     CheckAndNotifyDiamondsAndPets()
 end
