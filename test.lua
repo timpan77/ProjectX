@@ -66,31 +66,31 @@ local function SendInventoryWebhook()
             diff = string.format(" (%s%s)", sign, Formatint(change))
         end
     end
-    lastDiamondCount = diamonds
+    local diamonds = GetDiamonds()
 
-    local embed = {
-        title = "📦 Inventory Update",
-        description = string.format([[
-    **%s har just nu:**
-    💎 Diamonds       = %s%s
-    🐾 Huge = %d, Titanic = %d, Gargantuan = %d
-    ]], 
-    LocalPlayer.Name, 
-    Formatint(GetDiamonds()), 
-    (GetDiamonds() - prevDiamonds > 0 and string.format(" (+%s)", Formatint(GetDiamonds() - prevDiamonds)) or ""), 
-    hugeCount or 0, 
-    titanicCount or 0, 
-    gargantuanCount or 0),
-        color = 0xFF00FF,  -- Samma färg som Huge
-        timestamp = DateTime.now():ToIsoDate(),
-        thumbnail = {
-            url = GetPlayerAvatar(LocalPlayer.UserId)
-        },
-        footer = {
-            text = string.format("discord.gg/ProjectX | 🌙 | Uppdatering var %d min", getgenv().Config.Webhook.UpdateIntervalMinutes),
-            icon_url = GetPlayerAvatar(LocalPlayer.UserId)
-        }
+local embed = {
+    title = "📦 Inventory Update",
+    description = string.format([[
+**%s har just nu:**
+💎 Diamonds       = %s
+🐾 Huge = %d, Titanic = %d, Gargantuan = %d
+]], 
+LocalPlayer.Name, 
+Formatint(diamonds), 
+hugeCount or 0, 
+titanicCount or 0, 
+gargantuanCount or 0),
+    color = 0xFF00FF,  -- Samma färg som Huge
+    timestamp = DateTime.now():ToIsoDate(),
+    thumbnail = {
+        url = GetPlayerAvatar(LocalPlayer.UserId)
+    },
+    footer = {
+        text = string.format("discord.gg/ProjectX | 🌙 | Uppdatering var %d min", getgenv().Config.Webhook.UpdateIntervalMinutes),
+        icon_url = GetPlayerAvatar(LocalPlayer.UserId)
     }
+}
+
     
 
     local body = HttpService:JSONEncode({
