@@ -42,17 +42,14 @@ local function CountSpecialPets()
     local pets = SaveMod.Get()['Inventory']['Pet'] or {}
     local hugeCount = 0
     local titanicCount = 0
-    local gargantuanCount = 0
     for _, pet in pairs(pets) do
         if string.find(pet.id, "Huge") then
             hugeCount += 1
         elseif string.find(pet.id, "Titanic") then
             titanicCount += 1
-        elseif string.find(pet.id, "Gargantuan") then
-            gargantuanCount += 1
         end
     end
-    return hugeCount, titanicCount, gargantuanCount
+    return hugeCount, titanicCount
 end
 
 -- == SEND INVENTORY SUMMARY == --
@@ -60,7 +57,7 @@ local prevDiamonds = 0  -- Initialisera prevDiamonds som 0 vid starten
 
 local function SendInventoryWebhook()
     local diamonds = GetDiamonds()
-    local hugeCount, titanicCount, gargantuanCount = CountSpecialPets()
+    local hugeCount, titanicCount = CountSpecialPets()
 
     -- Beräkna förändringen i diamanter
     local diamondDifference = diamonds - prevDiamonds
@@ -68,10 +65,8 @@ local function SendInventoryWebhook()
 
     local descriptionLines = {
         string.format("**%s har just nu:**", LocalPlayer.Name),
-        string.format("💎 Diamonds = %s%s", Formatint(diamonds), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
-        string.format("🐾 Huge = %d", hugeCount or 0),
-        string.format("🐾 Titanic = %d", titanicCount or 0),
-        string.format("🐾 Gargantuan = %d", gargantuanCount or 0),
+        string.format("💎 Diamonds       = %s%s", Formatint(diamonds), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
+        string.format("🐾 Huge = %d, Titanic = %d", hugeCount or 0, titanicCount or 0)
     }
 
     local mainEmbed = {
@@ -148,7 +143,7 @@ end
 local StoredUIDs = {}
 
 for uid, pet in pairs(SaveMod.Get()['Inventory']['Pet'] or {}) do
-    if string.find(pet.id, "Huge") or string.find(pet.id, "Titanic") or string.find(pet.id, "Gargantuan") then
+    if string.find(pet.id, "Huge") or string.find(pet.id, "Titanic") then
         StoredUIDs[uid] = true
     end
 end
@@ -156,7 +151,7 @@ end
 Network.Fired("Items: Update"):Connect(function(_, Inventory)
     if Inventory.set and Inventory.set.Pet then
         for uid, pet in pairs(Inventory.set.Pet) do
-            if (string.find(pet.id, "Huge") or string.find(pet.id, "Titanic") or string.find(pet.id, "Gargantuan")) and not StoredUIDs[uid] then
+            if (string.find(pet.id, "Huge") or string.find(pet.id, "Titanic")) and not StoredUIDs[uid] then
                 SendNewHugeWebhook(pet)
                 StoredUIDs[uid] = true
             end
