@@ -1,15 +1,97 @@
+-- == SERVICES & GLOBALS == --
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
-local Library = ReplicatedStorage.Library
-local SaveMod = require(Library.Client.Save)
-local player = Players.LocalPlayer
-local playerName = player and player.Name or "Unknown Player"
-local playerId = player and player.UserId or 0
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+local Library = ReplicatedStorage:WaitForChild("Library")
+local Client = Library.Client
+local SaveMod = require(Client.Save)
+local Network = require(Client.Network)
+local ExistCmds = require(Client.ExistCountCmds)
+local RapCmds = require(Client.DevRAPCmds)
+local StoredUIDs = {}
 
+-- == UTILITIES == --
+local function Formatint(int)
+    local Suffix = {"", "k", "M", "B", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No", "De", "UDe", "DDe", "TDe"}
+    local Index = 1
+    while int >= 1000 and Index < #Suffix do
+        int = int / 1000
+        Index += 1
+    end
+    return string.format("%.2f%s", int, Suffix[Index])
+end
+
+local function GetAsset(Id, pt)
+    local Asset = require(Library.Directory.Pets)[Id]
+    return string.gsub(Asset and (pt == 1 and Asset.goldenThumbnail or Asset.thumbnail) or "14976456685", "rbxassetid://", "")
+end
+
+local function GetStats(Cmds, Class, ItemTable)
+    return Cmds.Get({
+        Class = { Name = Class },
+        IsA = function(InputClass) return InputClass == Class end,
+        GetId = function() return ItemTable.id end,
+        StackKey = function()
+            return HttpService:JSONEncode({id = ItemTable.id, sh = ItemTable.sh, pt = ItemTable.pt, tn = ItemTable.tn})
+        end
+    }) or nil
+end
+
+local function SendPetWebhook(Id, pt, sh)
+    local Img = string.format("https://biggamesapi.io/image/%s", GetAsset(Id, pt))
+    local Version = pt == 1 and "Golden " or pt == 2 and "Rainbow " or ""
+    local Title = string.format("||%s|| obtained a %s%s%s", LocalPlayer.Name, Version, sh and "Shiny " or "", Id)
+
+    local Exist = GetStats(ExistCmds, "Pet", { id = Id, pt = pt, sh = sh, tn = nil })
+    local Rap = GetStats(RapCmds, "Pet", { id = Id, pt = pt, sh = sh, tn = nil })
+
+    local Body = HttpService:JSONEncode({
+        content = getgenv().Config.Webhook.PingID and string.format("<@%s>", getgenv().Config.Webhook.PingID) or nil,
+        embeds = {{
+            title = Title,
+            color = 0xFF00FF,
+            timestamp = DateTime.now():ToIsoDate(),
+            thumbnail = { url = Img },
+            fields = {{
+                name = string.format("💎 Rap: ``%s`` \n💫 Exist: ``%s``", Formatint(Rap or 0), Formatint(Exist or 0)),
+                value = ""
+            }},
+            footer = { text = "Hippo Logs" }
+        }}
+    })
+
+    pcall(function()
+        request({
+            Url = getgenv().Config.Webhook.URL,
+            Method = "POST",
+            Headers = { ["Content-Type"] = "application/json" },
+            Body = Body
+        })
+    end)
+end
+
+-- == PET MONITOR == --
+for i, v in pairs(SaveMod.Get()['Inventory']['Pet'] or {}) do
+    if string.find(v.id, "Huge") or string.find(v.id, "Titanic") or string.find(v.id, "Gargantuan") then
+        StoredUIDs[i] = true
+    end
+end
+
+Network.Fired("Items: Update"):Connect(function(_, Inventory)
+    if Inventory["set"] and Inventory["set"]["Pet"] then
+        for uid, v in pairs(Inventory["set"]["Pet"]) do
+            if (string.find(v.id, "Huge") or string.find(v.id, "Titanic") or string.find(v.id, "Gargantuan")) and not StoredUIDs[uid] then
+                SendPetWebhook(v.id, v.pt, v.sh)
+                StoredUIDs[uid] = true
+            end
+        end
+    end
+end)
+
+-- == DIAMOND TRACKER == --
 local function IsPlayerConnected()
-    local player = Players.LocalPlayer
-    return player and player:IsDescendantOf(game)
+    return LocalPlayer and LocalPlayer:IsDescendantOf(game)
 end
 
 local function GetPlayerAvatar(userId)
@@ -18,35 +100,22 @@ end
 
 local function GetDiamondsFromLeaderstats()
     local diamondAmount = 0
-    local leaderstats = player:FindFirstChild("leaderstats")
-    
+    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
     if leaderstats then
         local diamondStat = leaderstats:FindFirstChild("💎 Diamonds")
         if diamondStat and diamondStat:IsA("IntValue") then
             diamondAmount = diamondStat.Value
-        else
-            warn("No 💎 Diamonds found in leaderstats.")
         end
-    else
-        warn("No leaderstats found.")
     end
-    
     return diamondAmount
 end
 
-local function SendToWebhook(diamondAmount)
-    local descriptionLines = {
-        string.format("\n**Username: ||%s||**", playerName),
-        "```",
-        string.format("%-15s = %d", "💎 Diamonds", diamondAmount),
-        "```"
-    }
-    
+local function SendDiamondWebhook(diamondAmount)
     local embedColor = IsPlayerConnected() and 0x00FF00 or 0xFF0000
-    
-    local mainEmbed = {
+
+    local embed = {
         title = "💎 **Diamond Inventory Update** 💎",
-        description = table.concat(descriptionLines, "\n"),
+        description = string.format("**Username: ||%s||**\n```\n%-15s = %d\n```", LocalPlayer.Name, "💎 Diamonds", diamondAmount),
         color = embedColor,
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
@@ -54,45 +123,36 @@ local function SendToWebhook(diamondAmount)
         },
         footer = {
             text = string.format("discord.gg/ProjectX | 🌙 | Next update: %d mins", getgenv().Config.Webhook.UpdateIntervalMinutes),
+            icon_url = GetPlayerAvatar(LocalPlayer.UserId)
         }
     }
-    
-    -- Add player avatar as footer icon
-    if player then
-        mainEmbed.footer.icon_url = GetPlayerAvatar(playerId)
-    end
 
-    local success, err = pcall(function()
-        local response = request({
+    local body = HttpService:JSONEncode({
+        content = getgenv().Config.Webhook.PingID and string.format("<@%s>", getgenv().Config.Webhook.PingID) or nil,
+        embeds = {embed}
+    })
+
+    pcall(function()
+        request({
             Url = getgenv().Config.Webhook.URL,
             Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = HttpService:JSONEncode({
-                content = getgenv().Config.Webhook.PingID and string.format("<@%s>", getgenv().Config.Webhook.PingID) or nil,
-                embeds = {mainEmbed}
-            })
+            Headers = { ["Content-Type"] = "application/json" },
+            Body = body
         })
-        return response
     end)
-    
-    if not success then
-        warn("Failed to send webhook:", err)
-    end
 end
 
-local function CheckAndNotifyDiamonds()
-    local diamondAmount = GetDiamondsFromLeaderstats()
-    
-    print("\n=====Current Diamonds:=====")
-    print(string.format("%-15s = %d", "💎 Diamonds", diamondAmount))
-    
-    SendToWebhook(diamondAmount)
+local function StartDiamondLoop()
+    task.spawn(function()
+        while true do
+            SendDiamondWebhook(GetDiamondsFromLeaderstats())
+            task.wait(getgenv().Config.Webhook.UpdateIntervalMinutes * 60)
+        end
+    end)
 end
 
-CheckAndNotifyDiamonds()
-while true do
-    wait(getgenv().Config.Webhook.UpdateIntervalMinutes * 60)
-    CheckAndNotifyDiamonds()
-end
+-- == START AFTER GAME LOADED == --
+repeat task.wait() until game:IsLoaded()
+repeat task.wait() until not LocalPlayer.PlayerGui:FindFirstChild('__INTRO')
+
+StartDiamondLoop()
