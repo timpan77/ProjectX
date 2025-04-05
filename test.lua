@@ -40,24 +40,38 @@ end
 
 local function CountSpecialPets()
     local pets = SaveMod.Get()['Inventory']['Pet'] or {}
-    local count = 0
+    local hugeCount, titanicCount, gargantuanCount = 0, 0, 0
     for _, pet in pairs(pets) do
-        if string.find(pet.id, "Huge") or string.find(pet.id, "Titanic") or string.find(pet.id, "Gargantuan") then
-            count += 1
+        if string.find(pet.id, "Huge") then
+            hugeCount += 1
+        elseif string.find(pet.id, "Titanic") then
+            titanicCount += 1
+        elseif string.find(pet.id, "Gargantuan") then
+            gargantuanCount += 1
         end
     end
-    return count
+    return hugeCount, titanicCount, gargantuanCount
 end
 
 -- == SEND INVENTORY SUMMARY == --
 local function SendInventoryWebhook()
     local diamonds = GetDiamonds()
-    local specialCount = CountSpecialPets()
+    local hugeCount, titanicCount, gargantuanCount = CountSpecialPets()
+
+    local diff = ""
+    if lastDiamondCount ~= nil then
+        local change = diamonds - lastDiamondCount
+        if change ~= 0 then
+            local sign = change > 0 and "+" or ""
+            diff = string.format(" (%s%s)", sign, Formatint(change))
+        end
+    end
+    lastDiamondCount = diamonds
 
     local embed = {
         title = "📦 Inventory Update",
         description = string.format("**%s har just nu:**\n```💎 Diamonds       = %s\n🐾 Huge/Titanics  = %d```", LocalPlayer.Name, Formatint(diamonds), specialCount),
-        color = 0xFF00FF,  -- Samma färg som huge
+        color = 0xFF00FF,  -- Samma färg som Huge
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
             url = GetPlayerAvatar(LocalPlayer.UserId)
