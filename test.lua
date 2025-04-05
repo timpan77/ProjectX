@@ -65,9 +65,9 @@ local function SendInventoryWebhook()
 
     local descriptionLines = {
         "```",
-        string.format("💎 Diamonds     = %s%s", Formatint(diamonds), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
-        string.format("%-15s = %d", "🐾 Huge", hugeCount),
-        string.format("%-15s = %d", "🐾 Titanic", titanicCount),
+        string.format("%-18s = %s%s", "💎 Diamonds", Formatint(diamonds), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
+        string.format("%-18s = %d", "🐾 Huge", hugeCount),
+        string.format("%-18s = %d", "🐾 Titanic", titanicCount),
         "```"
     }
 
