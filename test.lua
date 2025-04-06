@@ -8,15 +8,6 @@ local Client = Library.Client
 local SaveMod = require(Client.Save)
 local Network = require(Client.Network)
 
--- == CONFIG == --
-getgenv().Config = {
-    Webhook = {
-        URL = "DIN_WEBHOOK_HÄR",
-        PingID = nil,
-        UpdateIntervalHours = 24 -- antal timmar mellan 24h notiser
-    }
-}
-
 -- == UTILS == --
 local function GetPlayerAvatar(userId)
     return string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=420&height=420&format=png", userId)
