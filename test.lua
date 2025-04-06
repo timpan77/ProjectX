@@ -8,11 +8,13 @@ local Client = Library.Client
 local SaveMod = require(Client.Save)
 local Network = require(Client.Network)
 
--- == UTILS == --
-local function IsPlayerConnected()
-    return LocalPlayer and LocalPlayer:IsDescendantOf(game)
-end
+-- == CONFIG == --
+getgenv().Config = getgenv().Config or {}
+getgenv().Config.Webhook = getgenv().Config.Webhook or {}
+getgenv().Config.Webhook.UpdateIntervalMinutes = getgenv().Config.Webhook.UpdateIntervalMinutes or 10
+getgenv().Config.Webhook.Diamonds24hIntervalHours = getgenv().Config.Webhook.Diamonds24hIntervalHours or 24
 
+-- == UTILS == --
 local function GetPlayerAvatar(userId)
     return string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=420&height=420&format=png", userId)
 end
@@ -38,50 +40,54 @@ local function GetDiamonds()
     return 0
 end
 
-local function CountSpecialPets()
+local function CountPets()
     local pets = SaveMod.Get()['Inventory']['Pet'] or {}
-    local hugeCount = 0
-    local titanicCount = 0
+    local huge, titanic = 0, 0
     for _, pet in pairs(pets) do
-        if string.find(pet.id, "Huge") then
-            hugeCount += 1
-        elseif string.find(pet.id, "Titanic") then
-            titanicCount += 1
-        end
+        if string.find(pet.id, "Huge") then huge += 1 end
+        if string.find(pet.id, "Titanic") then titanic += 1 end
     end
-    return hugeCount, titanicCount
+    return huge, titanic
 end
 
--- == SEND INVENTORY SUMMARY == --
-local prevDiamonds = 0  -- Initialisera prevDiamonds som 0 vid starten
+-- == DIAMOND TRACKER == --
+local last24hDiamonds = GetDiamonds()
+local last24hUpdate = os.time()
 
+-- == SEND WEBHOOK == --
 local function SendInventoryWebhook()
-    local diamonds = GetDiamonds()
-    local hugeCount, titanicCount = CountSpecialPets()
-
-    -- Beräkna förändringen i diamanter
-    local diamondDifference = diamonds - prevDiamonds
-    prevDiamonds = diamonds  -- Uppdatera prevDiamonds för nästa gång
+    local diamondAmount = GetDiamonds()
+    local hugeCount, titanicCount = CountPets()
+    local diamondDifference = diamondAmount - last24hDiamonds
+    local now = os.time()
 
     local descriptionLines = {
-        string.format("**%s have right now:**", LocalPlayer.Name),
+        string.format("**%s har just nu:**", LocalPlayer.Name),
         "```",
-        string.format("%-18s = %s%s", "💎 Diamonds", Formatint(diamonds), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
-        string.format("%-18s = %d", "🐾 Huge", hugeCount),
-        string.format("%-18s = %d", "🐾 Titanic", titanicCount),
-        "```"
+        string.format("%-15s = %s%s", "💎 Diamonds", Formatint(diamondAmount), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
+        string.format("%-15s = %d", "🐾 Huge", hugeCount),
+        string.format("%-15s = %d", "🐾 Titanic", titanicCount),
+        "```",
+        string.format("\n**Username: ||%s||**", LocalPlayer.Name)
     }
 
+    -- Only include 24h change if it's time
+    if now - last24hUpdate >= getgenv().Config.Webhook.Diamonds24hIntervalHours * 3600 then
+        table.insert(descriptionLines, string.format("```%-15s = %s```", "24h Change", Formatint(diamondDifference)))
+        last24hDiamonds = diamondAmount
+        last24hUpdate = now
+    end
+
     local mainEmbed = {
-        title = "📦 **Inventory Update** 📦",
+        title = "💎 **Gem Inventory Update** 💎",
         description = table.concat(descriptionLines, "\n"),
-        color = 0xFF00FF,  -- Samma färg som Huge
+        color = 0xFF00FF,
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
-            url = "https://cdn.discordapp.com/attachments/1358102605594886288/1358103169447756087/stsmall507x507-pad600x600f8f8f8.jpg?ex=67f29fa3&is=67f14e23&hm=9e07dcb6fc701a2ca8c2f7bf0371fa2aefb11cd561d19d059dda999ed99a34b2&"
+            url = "https://cdn.discordapp.com/attachments/1350797858240204810/1357324447996051526/8355-moon.png"
         },
         footer = {
-            text = string.format("discord.gg/ProjectX | 🌙 | Next update: %d mins", getgenv().Config.Webhook.UpdateIntervalMinutes),
+            text = string.format("discord.gg/projectlunar | 🌙 | Next update: %d min | 24h-check varje %d h", getgenv().Config.Webhook.UpdateIntervalMinutes, getgenv().Config.Webhook.Diamonds24hIntervalHours)
         }
     }
 
@@ -99,68 +105,6 @@ local function SendInventoryWebhook()
         })
     end)
 end
-
--- == SEND NEW PET NOTIFICATION == --
-local function SendNewHugeWebhook(pet)
-    local assetId = "14976456685"
-    pcall(function()
-        local asset = require(Library.Directory.Pets)[pet.id]
-        assetId = (pet.pt == 1 and asset.goldenThumbnail or asset.thumbnail):gsub("rbxassetid://", "") or assetId
-    end)
-
-    local petName = ""
-    if pet.pt == 1 then petName = petName .. "🟡 Golden " end
-    if pet.pt == 2 then petName = petName .. "🌈 Rainbow " end
-    if pet.sh then petName = petName .. "✨ Shiny " end
-    petName = petName .. pet.id
-
-    local petEmbed = {
-        title = "🎉 New Huge/Titanic Captured!",
-        description = string.format("**%s** have received one:\n```%s```", LocalPlayer.Name, petName),
-        color = 0xFF00FF,
-        timestamp = DateTime.now():ToIsoDate(),
-        thumbnail = {
-            url = "https://biggamesapi.io/image/" .. assetId
-        },
-        footer = {
-            text = "discord.gg/ProjectX"
-        }
-    }
-
-    local body = HttpService:JSONEncode({
-        content = getgenv().Config.Webhook.PingID and string.format("<@%s>", getgenv().Config.Webhook.PingID) or nil,
-        embeds = { petEmbed }
-    })
-
-    pcall(function()
-        request({
-            Url = getgenv().Config.Webhook.URL,
-            Method = "POST",
-            Headers = { ["Content-Type"] = "application/json" },
-            Body = body
-        })
-    end)
-end
-
--- == TRACK NEW SPECIAL PETS == --
-local StoredUIDs = {}
-
-for uid, pet in pairs(SaveMod.Get()['Inventory']['Pet'] or {}) do
-    if string.find(pet.id, "Huge") or string.find(pet.id, "Titanic") then
-        StoredUIDs[uid] = true
-    end
-end
-
-Network.Fired("Items: Update"):Connect(function(_, Inventory)
-    if Inventory.set and Inventory.set.Pet then
-        for uid, pet in pairs(Inventory.set.Pet) do
-            if (string.find(pet.id, "Huge") or string.find(pet.id, "Titanic")) and not StoredUIDs[uid] then
-                SendNewHugeWebhook(pet)
-                StoredUIDs[uid] = true
-            end
-        end
-    end
-end)
 
 -- == MAIN LOOP == --
 repeat task.wait() until game:IsLoaded()
