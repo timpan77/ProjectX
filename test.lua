@@ -59,18 +59,18 @@ local function SendInventoryWebhook()
     local titanicCount = CountPetsByKeyword("Titanic")
 
     local descriptionLines = {
-        string.format("**%s har just nu:**", LocalPlayer.Name),
+        string.format("**Username: ||%s||**", LocalPlayer.Name),
+        "**Have right now**",
         "```",
         string.format("%-15s = %s", "💎 Diamonds", Formatint(diamonds)),
         string.format("%-15s = %s", "⏳ 24h Diff", (diamondDifference >= 0 and "+" or "") .. Formatint(diamondDifference)),
         string.format("%-15s = %d", "🐾 Huge", hugeCount),
         string.format("%-15s = %d", "🐾 Titanic", titanicCount),
         "```",
-        string.format("\n**Username: ||%s||**", LocalPlayer.Name),
     }
 
     local embed = {
-        title = "💎 **Gem Inventory Update** 💎",
+        title = "📦 **Inventory Update** 📦",
         description = table.concat(descriptionLines, "\n"),
         color = 0xFF00FF,
         timestamp = DateTime.now():ToIsoDate(),
@@ -78,7 +78,7 @@ local function SendInventoryWebhook()
             url = GetPlayerAvatar(LocalPlayer.UserId)
         },
         footer = {
-            text = string.format("discord.gg/projectlunar | 🌙 | Next update: %d mins", getgenv().Config.Webhook.UpdateIntervalMinutes)
+            text = string.format("discord.gg/ProjectX | 🌙 | Next update: %d mins", getgenv().Config.Webhook.UpdateIntervalMinutes)
         }
     }
 
