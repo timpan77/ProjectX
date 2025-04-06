@@ -8,12 +8,6 @@ local Client = Library.Client
 local SaveMod = require(Client.Save)
 local Network = require(Client.Network)
 
--- == CONFIG == --
-getgenv().Config = getgenv().Config or {}
-getgenv().Config.Webhook = getgenv().Config.Webhook or {}
-getgenv().Config.Webhook.UpdateIntervalMinutes = getgenv().Config.Webhook.UpdateIntervalMinutes or 10
-getgenv().Config.Webhook.Diamonds24hIntervalHours = getgenv().Config.Webhook.Diamonds24hIntervalHours or 24
-
 -- == UTILS == --
 local function GetPlayerAvatar(userId)
     return string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=420&height=420&format=png", userId)
@@ -40,45 +34,51 @@ local function GetDiamonds()
     return 0
 end
 
-local function CountPets()
+local function CountSpecialPets()
     local pets = SaveMod.Get()['Inventory']['Pet'] or {}
     local huge, titanic = 0, 0
     for _, pet in pairs(pets) do
-        if string.find(pet.id, "Huge") then huge += 1 end
-        if string.find(pet.id, "Titanic") then titanic += 1 end
+        if string.find(pet.id, "Titanic") then
+            titanic += 1
+        elseif string.find(pet.id, "Huge") then
+            huge += 1
+        end
     end
     return huge, titanic
 end
 
--- == DIAMOND TRACKER == --
-local last24hDiamonds = GetDiamonds()
-local last24hUpdate = os.time()
+-- == DIAMOND TRACKING == --
+local diamondHistory = {
+    last24h = os.time(),
+    diamondAmount = GetDiamonds()
+}
 
--- == SEND WEBHOOK == --
+-- == SEND INVENTORY SUMMARY == --
 local function SendInventoryWebhook()
-    local diamondAmount = GetDiamonds()
-    local hugeCount, titanicCount = CountPets()
-    local diamondDifference = diamondAmount - last24hDiamonds
-    local now = os.time()
+    local diamonds = GetDiamonds()
+    local diamondDiff = diamonds - (diamondHistory.diamondAmount or diamonds)
+    local huge, titanic = CountSpecialPets()
 
     local descriptionLines = {
         string.format("**%s har just nu:**", LocalPlayer.Name),
         "```",
-        string.format("%-15s = %s%s", "💎 Diamonds", Formatint(diamondAmount), diamondDifference > 0 and string.format(" (+%s)", Formatint(diamondDifference)) or ""),
-        string.format("%-15s = %d", "🐾 Huge", hugeCount),
-        string.format("%-15s = %d", "🐾 Titanic", titanicCount),
+        string.format("%-15s = %s%s", "💎 Diamonds", Formatint(diamonds), diamondDiff > 0 and string.format(" (+%s)", Formatint(diamondDiff)) or ""),
+        string.format("%-15s = %d", "🐾 Huge", huge),
+        string.format("%-15s = %d", "🐾 Titanic", titanic),
         "```",
         string.format("\n**Username: ||%s||**", LocalPlayer.Name)
     }
 
-    -- Only include 24h change if it's time
-    if now - last24hUpdate >= getgenv().Config.Webhook.Diamonds24hIntervalHours * 3600 then
-        table.insert(descriptionLines, string.format("```%-15s = %s```", "24h Change", Formatint(diamondDifference)))
-        last24hDiamonds = diamondAmount
-        last24hUpdate = now
+    -- Kolla om 24h har gått
+    local now = os.time()
+    local hoursPassed = (now - diamondHistory.last24h) / 3600
+    if hoursPassed >= getgenv().Config.Webhook.UpdateIntervalHours then
+        table.insert(descriptionLines, string.format("\n**⏳ På %d timmar: 💎 %s**", getgenv().Config.Webhook.UpdateIntervalHours, Formatint(diamondDiff)))
+        diamondHistory.last24h = now
+        diamondHistory.diamondAmount = diamonds
     end
 
-    local mainEmbed = {
+    local embed = {
         title = "💎 **Gem Inventory Update** 💎",
         description = table.concat(descriptionLines, "\n"),
         color = 0xFF00FF,
@@ -87,13 +87,13 @@ local function SendInventoryWebhook()
             url = "https://cdn.discordapp.com/attachments/1350797858240204810/1357324447996051526/8355-moon.png"
         },
         footer = {
-            text = string.format("discord.gg/projectlunar | 🌙 | Next update: %d min | 24h-check varje %d h", getgenv().Config.Webhook.UpdateIntervalMinutes, getgenv().Config.Webhook.Diamonds24hIntervalHours)
+            text = string.format("discord.gg/projectlunar | 🌙 | Next update: %d timmar", getgenv().Config.Webhook.UpdateIntervalHours)
         }
     }
 
     local body = HttpService:JSONEncode({
         content = getgenv().Config.Webhook.PingID and string.format("<@%s>", getgenv().Config.Webhook.PingID) or nil,
-        embeds = { mainEmbed }
+        embeds = { embed }
     })
 
     pcall(function()
@@ -113,6 +113,6 @@ repeat task.wait() until not LocalPlayer.PlayerGui:FindFirstChild("__INTRO")
 task.spawn(function()
     while true do
         SendInventoryWebhook()
-        task.wait(getgenv().Config.Webhook.UpdateIntervalMinutes * 60)
+        task.wait(60 * 60) -- kör var timme (kan ändras)
     end
 end)
