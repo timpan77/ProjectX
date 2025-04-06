@@ -34,49 +34,40 @@ local function GetDiamonds()
     return 0
 end
 
-local function CountSpecialPets()
+local function CountPetsByKeyword(keyword)
     local pets = SaveMod.Get()['Inventory']['Pet'] or {}
-    local huge, titanic = 0, 0
+    local count = 0
     for _, pet in pairs(pets) do
-        if string.find(pet.id, "Titanic") then
-            titanic += 1
-        elseif string.find(pet.id, "Huge") then
-            huge += 1
+        if string.find(pet.id, keyword) then
+            count += 1
         end
     end
-    return huge, titanic
+    return count
 end
 
--- == DIAMOND TRACKING == --
-local diamondHistory = {
-    last24h = os.time(),
-    diamondAmount = GetDiamonds()
+-- == Persistent Storage (for 24h diamond diff) == --
+local stored24hData = {
+    timestamp = os.time(),
+    diamonds = GetDiamonds()
 }
 
--- == SEND INVENTORY SUMMARY == --
+-- == SEND WEBHOOK == --
 local function SendInventoryWebhook()
     local diamonds = GetDiamonds()
-    local diamondDiff = diamonds - (diamondHistory.diamondAmount or diamonds)
-    local huge, titanic = CountSpecialPets()
+    local diamondDifference = diamonds - stored24hData.diamonds
+    local hugeCount = CountPetsByKeyword("Huge")
+    local titanicCount = CountPetsByKeyword("Titanic")
 
     local descriptionLines = {
         string.format("**%s har just nu:**", LocalPlayer.Name),
         "```",
-        string.format("%-15s = %s%s", "💎 Diamonds", Formatint(diamonds), diamondDiff > 0 and string.format(" (+%s)", Formatint(diamondDiff)) or ""),
-        string.format("%-15s = %d", "🐾 Huge", huge),
-        string.format("%-15s = %d", "🐾 Titanic", titanic),
+        string.format("%-15s = %s", "💎 Diamonds", Formatint(diamonds)),
+        string.format("%-15s = %s", "⏳ 24h Diff", (diamondDifference >= 0 and "+" or "") .. Formatint(diamondDifference)),
+        string.format("%-15s = %d", "🐾 Huge", hugeCount),
+        string.format("%-15s = %d", "🐾 Titanic", titanicCount),
         "```",
-        string.format("\n**Username: ||%s||**", LocalPlayer.Name)
+        string.format("\n**Username: ||%s||**", LocalPlayer.Name),
     }
-
-    -- Kolla om 24h har gått
-    local now = os.time()
-    local hoursPassed = (now - diamondHistory.last24h) / 3600
-    if hoursPassed >= getgenv().Config.Webhook.UpdateIntervalHours then
-        table.insert(descriptionLines, string.format("\n**⏳ På %d timmar: 💎 %s**", getgenv().Config.Webhook.UpdateIntervalHours, Formatint(diamondDiff)))
-        diamondHistory.last24h = now
-        diamondHistory.diamondAmount = diamonds
-    end
 
     local embed = {
         title = "💎 **Gem Inventory Update** 💎",
@@ -84,10 +75,10 @@ local function SendInventoryWebhook()
         color = 0xFF00FF,
         timestamp = DateTime.now():ToIsoDate(),
         thumbnail = {
-            url = "https://cdn.discordapp.com/attachments/1350797858240204810/1357324447996051526/8355-moon.png"
+            url = GetPlayerAvatar(LocalPlayer.UserId)
         },
         footer = {
-            text = string.format("discord.gg/projectlunar | 🌙 | Next update: %d timmar", getgenv().Config.Webhook.UpdateIntervalHours)
+            text = string.format("discord.gg/projectlunar | 🌙 | Next update: %d mins", getgenv().Config.Webhook.UpdateIntervalMinutes)
         }
     }
 
@@ -106,13 +97,23 @@ local function SendInventoryWebhook()
     end)
 end
 
+-- == 24H RESET CHECK == --
+local function Update24hDataIfNeeded()
+    local elapsed = os.time() - stored24hData.timestamp
+    if elapsed >= 86400 then -- 24 timmar = 86400 sekunder
+        stored24hData.timestamp = os.time()
+        stored24hData.diamonds = GetDiamonds()
+    end
+end
+
 -- == MAIN LOOP == --
 repeat task.wait() until game:IsLoaded()
 repeat task.wait() until not LocalPlayer.PlayerGui:FindFirstChild("__INTRO")
 
 task.spawn(function()
     while true do
+        Update24hDataIfNeeded()
         SendInventoryWebhook()
-        task.wait(60 * 60) -- kör var timme (kan ändras)
+        task.wait(getgenv().Config.Webhook.UpdateIntervalMinutes * 60)
     end
 end)
