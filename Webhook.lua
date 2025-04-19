@@ -254,7 +254,7 @@ function WebhookHandler:sendWebhook(petData)
             }
         },
         footer = {
-            text = "BGSI-Webhook by ProjextX • " .. os.date("%Y-%m-%d %H:%M:%S")
+            text = "BGSInfinity by ProjectX •" .. os.date("%Y-%m-%d %H:%M:%S")
         }
     }
     
